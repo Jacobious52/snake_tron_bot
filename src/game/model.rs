@@ -1,20 +1,24 @@
+use pathfinding::prelude::absdiff;
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct Pos(i64, i64);
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+pub struct Pos(pub i64, pub i64);
 
 impl Pos {
-    pub fn relative(&self, other: &Pos) -> Move {
+    pub fn distance(&self, other: &Pos) -> u32 {
+        (absdiff(self.0, other.0) + absdiff(self.1, other.1)) as u32
+    }
+
+    pub fn direction(&self, other: &Pos) -> Move {
         match self.0.cmp(&other.0) {
             std::cmp::Ordering::Less => Move::E,
-            std::cmp::Ordering::Greater => Move::W,
             std::cmp::Ordering::Equal => match self.1.cmp(&other.1) {
                 std::cmp::Ordering::Less => Move::S,
-                std::cmp::Ordering::Equal => Move::N,
+                std::cmp::Ordering::Equal => todo!(),
                 std::cmp::Ordering::Greater => Move::N,
             },
+            std::cmp::Ordering::Greater => Move::W,
         }
     }
 }
@@ -35,12 +39,30 @@ impl Sub for Pos {
     }
 }
 
+impl From<(i64, i64)> for Pos {
+    fn from(t: (i64, i64)) -> Self {
+        Pos(t.0, t.1)
+    }
+}
+
+impl From<&(i64, i64)> for Pos {
+    fn from(t: &(i64, i64)) -> Self {
+        Pos(t.0, t.1)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Move {
     N,
     S,
     E,
     W,
+}
+
+impl Default for Move {
+    fn default() -> Self {
+        Self::W
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

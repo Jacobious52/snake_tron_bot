@@ -1,4 +1,8 @@
-use super::model::{GameState, Meta, Move};
+use super::{
+    grid::{Cell, Grid},
+    model::{GameState, Meta, Move},
+    snake::Snake,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -6,11 +10,14 @@ pub struct Game {
     pub id: String,
     pub meta: Meta,
     pub game_states: Vec<GameState>,
+    #[serde(skip)]
     pub bot: Bot,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Bot {}
+#[derive(Debug, Clone, Default)]
+pub struct Bot {
+    last_move: Move,
+}
 
 impl Game {
     pub fn new(game_state: GameState) -> Self {
@@ -26,16 +33,49 @@ impl Game {
         Move::N
     }
 
-    pub fn update(&mut self, state: GameState) -> Move {
-        let food = match state.food.first() {
-            Some(f) => f,
-            None => return Move::N,
-        };
+    pub fn update(&mut self, player_number: usize, state: GameState) -> Move {
+        let mut grid = Grid::new(self.meta.grid_size);
 
-        let pos = state.positions[self.meta.player_number.unwrap()]
-            .first()
+        state.food.iter().for_each(|f| grid.set(f, Cell::Food));
+        let me = Snake::new(&state.positions[player_number]);
+        me.apply(&mut grid);
+
+        let others: Vec<_> = state
+            .positions
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _v)| *i != player_number)
+            .map(|(_, v)| Snake::new(&v))
+            .collect();
+
+        others.iter().for_each(|s| s.apply(&mut grid));
+
+        if player_number == 0 {
+            println!("\\033[2J\\033[H{}", grid.draw());
+        }
+
+        let closest_food = state
+            .food
+            .into_iter()
+            .min_by(|a, b| me.head().distance(a).cmp(&me.head().distance(b)))
             .unwrap();
 
-        pos.relative(food)
+        let search = me.search(&grid, closest_food);
+
+        match search {
+            Some((path, cost)) => {
+                tracing::info!("found path: cost {:?}", cost);
+                let next_move = path[0].direction(&path[1]);
+                self.bot.last_move = next_move;
+                next_move
+            }
+            None => {
+                tracing::info!(
+                    "no path found, returning last move: {:?}",
+                    self.bot.last_move
+                );
+                self.bot.last_move
+            }
+        }
     }
 }

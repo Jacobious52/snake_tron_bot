@@ -30,19 +30,23 @@ pub async fn init(
 
     let next_move = game.init();
 
-    tracing::info!("chose move {:?}", next_move);
+    tracing::info!("initial chose move {:?}", next_move);
 
     Ok(Json(next_move))
 }
 
 pub async fn update(
     games: extract::Extension<Arc<Mutex<Games>>>,
-    _query: extract::Query<PlayerQuery>,
+    query: extract::Query<PlayerQuery>,
     extract::Json(state): extract::Json<GameState>,
 ) -> Result<Json<Move>, StatusCode> {
     let mut games = games.lock().unwrap();
     let game = games.game(&state.meta.game_id).ok_or(StatusCode::GONE)?;
-    let next_move = game.update(state);
+
+    let player_number = query.player_number;
+    let next_move = game.update(player_number, state);
+
+    tracing::info!("update chose move {:?}", next_move);
 
     Ok(Json(next_move))
 }
@@ -53,8 +57,9 @@ pub async fn end(
     extract::Json(state): extract::Json<GameState>,
 ) -> Result<Json<Move>, StatusCode> {
     let mut games = games.lock().unwrap();
-
     games.end_game(&state.meta.game_id);
+
+    tracing::info!("died. removing game");
 
     Ok(Json(Move::E))
 }
