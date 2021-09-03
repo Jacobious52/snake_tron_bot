@@ -1,4 +1,4 @@
-use super::routes::tick;
+use super::routes::{end, init, update};
 use super::{model::Games, routes::debug};
 use axum::handler::get;
 use axum::{body::Body, handler::post, routing::BoxRoute, AddExtensionLayer, Router};
@@ -16,7 +16,9 @@ pub fn router() -> Router<BoxRoute> {
     let games = Arc::new(Mutex::new(Games::new()));
 
     Router::new()
-        .route("/", post(tick).options(|| async { "" }))
+        .route("/init", post(init).options(|| async { "" }))
+        .route("/update", post(update).options(|| async { "" }))
+        .route("/end", post(end).options(|| async { "" }))
         .route("/debug", get(debug))
         .layer(cors_middleware)
         .layer(AddExtensionLayer::new(games))
@@ -24,13 +26,15 @@ pub fn router() -> Router<BoxRoute> {
         .boxed()
 }
 
-fn cors() -> Stack<
+type CorsStack = Stack<
     SetResponseHeaderLayer<HeaderValue, Body>,
     Stack<
         SetResponseHeaderLayer<HeaderValue, Body>,
         Stack<SetResponseHeaderLayer<HeaderValue, Body>, Identity>,
     >,
-> {
+>;
+
+fn cors() -> CorsStack {
     ServiceBuilder::new()
         .layer(SetResponseHeaderLayer::<_, Body>::if_not_present(
             header::ACCESS_CONTROL_ALLOW_METHODS,

@@ -6,24 +6,16 @@ use serde::{Deserialize, Serialize};
 pub struct Pos(i64, i64);
 
 impl Pos {
-    pub fn abs(&self) -> Pos {
-        Pos(self.0.abs(), self.1.abs())
-    }
-
     pub fn relative(&self, other: &Pos) -> Move {
-        if self.0 < other.0 {
-            return Move::W;
-        } else if self.0 > other.0 {
-            return Move::E;
+        match self.0.cmp(&other.0) {
+            std::cmp::Ordering::Less => Move::E,
+            std::cmp::Ordering::Greater => Move::W,
+            std::cmp::Ordering::Equal => match self.1.cmp(&other.1) {
+                std::cmp::Ordering::Less => Move::S,
+                std::cmp::Ordering::Equal => Move::N,
+                std::cmp::Ordering::Greater => Move::N,
+            },
         }
-
-        if self.1 < other.1 {
-            return Move::W;
-        } else if self.1 > other.1 {
-            return Move::E;
-        }
-
-        Move::N
     }
 }
 
