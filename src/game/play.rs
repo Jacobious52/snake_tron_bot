@@ -37,22 +37,22 @@ impl Game {
         let mut grid = Grid::new(self.meta.grid_size);
 
         state.food.iter().for_each(|f| grid.set(f, Cell::Food));
-        let me = Snake::new(&state.positions[player_number]);
-        me.apply(&mut grid);
+        let me = Snake::new(player_number, &state.positions[player_number]);
+        me.apply(&mut grid, false);
 
         let others: Vec<_> = state
             .positions
             .into_iter()
             .enumerate()
-            .filter(|(i, _v)| *i != player_number)
-            .map(|(_, v)| Snake::new(&v))
+            .filter(|(i, _)| *i != player_number)
+            .map(|(i, v)| Snake::new(i, &v))
             .collect();
 
-        others.iter().for_each(|s| s.apply(&mut grid));
+        others.iter().for_each(|s| s.apply(&mut grid, true));
 
-        if player_number == 0 {
-            println!("\\033[2J\\033[H{}", grid.draw());
-        }
+        // if player_number == 0 {
+        //     println!("----\n{}", grid.draw());
+        // }
 
         let closest_food = state
             .food
@@ -64,13 +64,13 @@ impl Game {
 
         match search {
             Some((path, cost)) => {
-                tracing::info!("found path: cost {:?}", cost);
+                tracing::debug!("found path: cost {:?}", cost);
                 let next_move = path[0].direction(&path[1]);
                 self.bot.last_move = next_move;
                 next_move
             }
             None => {
-                tracing::info!(
+                tracing::debug!(
                     "no path found, returning last move: {:?}",
                     self.bot.last_move
                 );

@@ -8,15 +8,17 @@ pub enum Cell {
     Food,
     Head,
     Body,
+    FutureHead,
 }
 
 impl Display for Cell {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &*self {
-            Cell::Empty => write!(f, " "),
+            Cell::Empty => write!(f, "."),
             Cell::Food => write!(f, "o"),
             Cell::Head => write!(f, "X"),
             Cell::Body => write!(f, "#"),
+            Cell::FutureHead => write!(f, "^"),
         }
     }
 }
@@ -39,10 +41,6 @@ impl Grid {
         self.grid[pos.0 as usize][pos.1 as usize] = cell;
     }
 
-    pub fn unblocked(&self, pos: &Pos) -> bool {
-        matches!(self.get(pos), Cell::Empty | Cell::Food)
-    }
-
     pub fn draw(&self) -> String {
         let mut output = String::new();
         for col in &self.grid {
@@ -52,6 +50,18 @@ impl Grid {
             output += "\n";
         }
         output
+    }
+
+    pub fn successors(&self, pos: &Pos) -> Vec<Pos> {
+        self.neighbours(pos)
+            .into_iter()
+            .filter(|p| self.unblocked(p))
+            .collect()
+    }
+
+    pub fn unblocked(&self, pos: &Pos) -> bool {
+        let cell = self.get(pos);
+        matches!(cell, Cell::Empty | Cell::Food)
     }
 
     pub fn neighbours(&self, pos: &Pos) -> Vec<Pos> {
