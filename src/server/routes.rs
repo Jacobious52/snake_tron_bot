@@ -43,10 +43,12 @@ pub async fn update(
     let mut games = games.lock().unwrap();
     let game = games.game(&state.meta.game_id).ok_or(StatusCode::GONE)?;
 
+    let tick = state.tick;
+
     let player_number = query.player_number;
     let next_move = game.update(player_number, state);
 
-    tracing::info!("update chose move {:?}", next_move);
+    tracing::info!("[{}] update chose move {:?}", tick, next_move);
 
     Ok(Json(next_move))
 }

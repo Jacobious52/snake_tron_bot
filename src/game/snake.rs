@@ -5,6 +5,7 @@ use super::{
     model::Pos,
 };
 
+#[derive(Debug, Clone)]
 pub struct Snake {
     player_number: usize,
     positions: Vec<Pos>,
@@ -24,6 +25,10 @@ impl Snake {
 
     pub fn body(&self) -> &[Pos] {
         &self.positions[1..]
+    }
+
+    pub fn player_number(&self) -> usize {
+        self.player_number
     }
 
     pub fn apply(&self, grid: &mut Grid, apply_future: bool) {

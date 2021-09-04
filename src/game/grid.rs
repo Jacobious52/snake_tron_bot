@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use super::model::Pos;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Cell {
