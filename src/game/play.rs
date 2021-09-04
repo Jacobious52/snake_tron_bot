@@ -69,7 +69,12 @@ impl Game {
                     "no path found, returning last move: {:?}",
                     self.bot.last_move
                 );
-                self.bot.last_move
+
+                // pick a random spot next
+                grid.successors(&me.head())
+                    .first()
+                    .map(|p| me.head().direction(p))
+                    .unwrap_or(self.bot.last_move)
             }
         }
     }
