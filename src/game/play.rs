@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 pub struct Game {
     pub id: String,
     pub meta: Meta,
+    // in case we ever want to state looking back at game states
+    // update does not yet push to this because it's not needed
     pub game_states: Vec<GameState>,
     #[serde(skip)]
     pub bot: Bot,
@@ -34,7 +36,8 @@ impl Game {
         Move::N
     }
 
-    pub fn update(&mut self, player_number: usize, state: GameState) -> Move {
+    #[tracing::instrument(skip(state))]
+    pub fn update(&mut self, player_number: usize, modifier: &str, state: GameState) -> Move {
         let mut grid = Grid::new(self.meta.grid_size);
 
         state.food.iter().for_each(|f| grid.set(f, Cell::Food));
@@ -55,7 +58,11 @@ impl Game {
         //     println!("----\n{}", grid.draw());
         // }
 
-        let my_best_path = self.closest_food_in_reach(&state, &grid, &me, &others);
+        let my_best_path = if modifier.contains("eager") {
+            self.eager_closest_food_in_reach(&state, &grid, &me, &others)
+        } else {
+            self.full_closest_food_in_reach(&state, &grid, &me, &others)
+        };
 
         match my_best_path {
             Some((path, cost)) => {
@@ -79,7 +86,7 @@ impl Game {
         }
     }
 
-    fn closest_food_in_reach(
+    fn full_closest_food_in_reach(
         &self,
         state: &GameState,
         grid: &Grid,
@@ -94,7 +101,9 @@ impl Game {
 
         my_food_paths.sort_by(|a, b| a.1 .1.cmp(&b.1 .1));
 
+        let mut last_option = None;
         for (food, (path, cost)) in my_food_paths {
+            last_option = Some((path, cost));
             let other_min_path = others
                 .par_iter()
                 .filter_map(|s| s.search(grid, *food))
@@ -102,13 +111,46 @@ impl Game {
 
             if let Some((_, c)) = other_min_path {
                 if cost < c {
-                    return Some((path, cost));
+                    return last_option;
                 }
             } else {
-                return Some((path, cost));
+                return last_option;
             }
         }
 
-        None
+        last_option
+    }
+
+    fn eager_closest_food_in_reach(
+        &self,
+        state: &GameState,
+        grid: &Grid,
+        me: &Snake,
+        others: &[Snake],
+    ) -> Option<(Vec<Pos>, u32)> {
+        let mut foods_ordered_by_dist = state.food.clone();
+        foods_ordered_by_dist.sort_by(|a, b| a.distance(&me.head()).cmp(&b.distance(&me.head())));
+
+        let mut last_option = None;
+        for food in foods_ordered_by_dist {
+            if let Some((path, cost)) = me.search(grid, food) {
+                last_option = Some((path, cost));
+
+                let other_min_path = others
+                    .par_iter()
+                    .filter_map(|s| s.search(grid, food))
+                    .min_by(|a, b| a.1.cmp(&b.1));
+
+                if let Some((_, c)) = other_min_path {
+                    if cost < c {
+                        return last_option;
+                    }
+                } else {
+                    return last_option;
+                }
+            }
+        }
+
+        last_option
     }
 }

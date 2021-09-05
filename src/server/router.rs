@@ -16,9 +16,9 @@ pub fn router() -> Router<BoxRoute> {
     let games = Arc::new(Mutex::new(Games::new()));
 
     Router::new()
-        .route("/init", post(init).options(|| async { "" }))
-        .route("/update", post(update).options(|| async { "" }))
-        .route("/end", post(end).options(|| async { "" }))
+        .route("/:mod/init", post(init).options(|| async { "" }))
+        .route("/:mod/update", post(update).options(|| async { "" }))
+        .route("/:mod/end", post(end).options(|| async { "" }))
         .route("/debug", get(debug))
         .layer(cors_middleware)
         .layer(AddExtensionLayer::new(games))

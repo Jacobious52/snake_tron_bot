@@ -14,6 +14,7 @@ pub struct PlayerQuery {
 pub async fn init(
     games: extract::Extension<Arc<Mutex<Games>>>,
     _query: extract::Query<PlayerQuery>,
+    extract::Path(_modifier): extract::Path<String>,
     extract::Json(meta): extract::Json<Meta>,
 ) -> Result<Json<Move>, StatusCode> {
     let mut games = games.lock().unwrap();
@@ -37,6 +38,7 @@ pub async fn init(
 
 pub async fn update(
     games: extract::Extension<Arc<Mutex<Games>>>,
+    extract::Path(modifier): extract::Path<String>,
     query: extract::Query<PlayerQuery>,
     extract::Json(state): extract::Json<GameState>,
 ) -> Result<Json<Move>, StatusCode> {
@@ -46,9 +48,14 @@ pub async fn update(
     let tick = state.tick;
 
     let player_number = query.player_number;
-    let next_move = game.update(player_number, state);
+    let next_move = game.update(player_number, &modifier, state);
 
-    tracing::info!("[{}] update chose move {:?}", tick, next_move);
+    tracing::info!(
+        "[{}] mod {} update chose move {:?}",
+        tick,
+        modifier,
+        next_move
+    );
 
     Ok(Json(next_move))
 }
@@ -56,6 +63,7 @@ pub async fn update(
 pub async fn end(
     games: extract::Extension<Arc<Mutex<Games>>>,
     _query: extract::Query<PlayerQuery>,
+    extract::Path(_modifier): extract::Path<String>,
     extract::Json(state): extract::Json<GameState>,
 ) -> Result<Json<Move>, StatusCode> {
     let mut games = games.lock().unwrap();
