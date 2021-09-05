@@ -27,9 +27,9 @@ impl Snake {
         &self.positions[1..]
     }
 
-    pub fn player_number(&self) -> usize {
-        self.player_number
-    }
+    // pub fn player_number(&self) -> usize {
+    //     self.player_number
+    // }
 
     pub fn apply(&self, grid: &mut Grid, apply_future: bool) {
         grid.set(&self.head(), Cell::Head);
@@ -42,6 +42,7 @@ impl Snake {
         }
     }
 
+    #[tracing::instrument(skip(grid))]
     pub fn search(&self, grid: &Grid, target: Pos) -> Option<(Vec<Pos>, u32)> {
         astar(
             &self.head(),

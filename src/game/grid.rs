@@ -40,17 +40,6 @@ impl Grid {
         self.grid[pos.0 as usize][pos.1 as usize] = cell;
     }
 
-    pub fn draw(&self) -> String {
-        let mut output = String::new();
-        for col in &self.grid {
-            for c in col {
-                output += &c.to_string();
-            }
-            output += "\n";
-        }
-        output
-    }
-
     pub fn successors(&self, pos: &Pos) -> Vec<Pos> {
         self.neighbours(pos)
             .into_iter()

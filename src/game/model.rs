@@ -70,9 +70,9 @@ impl Default for Move {
 pub struct GameState {
     pub tick: usize,
     pub positions: Vec<Vec<Pos>>,
-    pub food: Vec<Pos>,
+    pub food_positions: Vec<Pos>,
     pub last_moves: Vec<Move>,
-    pub player_alive: Vec<bool>,
+    pub players_alive: Vec<bool>,
     pub meta: Meta,
 }
 
